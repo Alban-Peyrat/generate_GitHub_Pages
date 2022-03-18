@@ -5,15 +5,15 @@
 import os
 import urllib.parse
 # External import
-import markdown # uses third-party extensions mdx_truly_sane_lists
+import markdown # uses third-party extensions mdx_truly_sane_lists and prependnewline
 import bs4
 import unidecode
 # Internal import
 import ressources.normalize as rscNz
 
 # Defines global variables
-##ext = ['toc', 'prependnewline','mdx_truly_sane_lists']
-ext = ['toc', 'mdx_truly_sane_lists']
+ext = ['toc', 'prependnewline','mdx_truly_sane_lists']
+##ext = ['toc', 'mdx_truly_sane_lists']
 githubPath = r"https://github.com/Alban-Peyrat/"
 pagesPath = r"https://alban-peyrat.github.io/outils/"
 # Je crois pas avoir besoin de ça en fait
@@ -29,7 +29,7 @@ def is_excluded_file(str):
             return True
     return False
 
-def main(repo, mdFilePath): # I need to specify a new direcotry for the html file
+def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
     # Defines all file paths
     PAGES_TEMPLATE = os.getenv("PAGES_TEMPLATE")
     path = mdFilePath[:mdFilePath.rfind("\\")+1]
@@ -40,6 +40,17 @@ def main(repo, mdFilePath): # I need to specify a new direcotry for the html fil
             path = path[:path[:-1].rfind("\\")+1]
     htmlFilePath = path + fileName + ".html"
     mdTempFilePath = path + "temp.md"
+    if htmlDirPath != "":
+        htmlFilePath = htmlDirPath + htmlFilePath[len(rootPath):]
+        os.makedirs(htmlFilePath[:htmlFilePath.rfind("\\")], exist_ok=True)
+##        subDirList = htmlFilePath[len(htmlDirPath)+1:].split("\\")
+##        subDirList.pop(len(subDirList)-1)
+##        print(subDirList)
+##        for dir in subDirList:
+##            os.makedirs(dir,)
+##            pass
+        mdTempFilePath = htmlDirPath + r"\temp.md"
+
 
     # Retrieves data from the markdown file
     with open(mdFilePath, mode="r+", encoding="utf-8") as f:
@@ -66,8 +77,12 @@ def main(repo, mdFilePath): # I need to specify a new direcotry for the html fil
         links = soup.findAll('a')
         for lnk in links:
             href = lnk.get("href")
-            if href[:1] == "#": # Internal link
+            if href[:1] == "#": # Internal file link
                 lnk["href"] = remove_accents_link(href)
+            elif href.find("/") == -1 or href[:1] == ".": # Same directory file /!\ needs to be changed
+                format = href[href.rfind(".")+1:href.rfind(".")+3]
+                if format == "md":
+                    lnk["href"]  = href[:href.rfind(".")+1] + "html"+ remove_accents_link(href[href.rfind(".")+3:])
             elif href[:len(githubPath)] == githubPath: # Link to my GitHub files
                 dotIndex = href.rfind(".", len(githubPath))
                 hashIndex = href.rfind("#", len(githubPath))
@@ -78,7 +93,9 @@ def main(repo, mdFilePath): # I need to specify a new direcotry for the html fil
                 elif dotIndex > -1 and hashIndex == -1:
                     format = href[dotIndex+1:len(href)]
                     if format == "md":
+                        print(lnk["href"])
                         lnk["href"] = pagesPath + lnk["href"][len(githubPath):]
+                        print(lnk["href"])
                 # Link to a file with an internal link (might be a .md)
                 elif dotIndex > -1 and hashIndex > -1:
                     lnk["href"] = lnk["href"][:hashIndex] + remove_accents_link(lnk["href"][hashIndex:])
@@ -97,10 +114,13 @@ def main(repo, mdFilePath): # I need to specify a new direcotry for the html fil
         # Adds the table of contents as an ordered list
         toc = soup.findAll("div",{"class":"toc"})
         if len(toc) > 0:
-            toc = toc[0].contents[1]
-            for this in toc.findAll("ul"):
-                this.name = "ol"
-            template.find(id="tableMatieres").append(toc)
+            if toc[0].li == None:
+                template.find(id="tableMatieres").decompose()
+            else:
+                toc = toc[0].contents[1]
+                for this in toc.findAll("ul"):
+                    this.name = "ol"
+                template.find(id="tableMatieres").append(toc)
 
         # Adds links to GitHub
         ghLinks = template.find(id="lienGitHub")
@@ -119,4 +139,5 @@ def main(repo, mdFilePath): # I need to specify a new direcotry for the html fil
 
 
 ##main("WinIBW", r"D:\test_python\EDIT_MARKDOWN.md")
-##main("CoCo-SAlma", r"D:\transform_github\CoCo-SAlma\README.md")
+##print(main("WinIBW", r"D:\transform_github\original_repos\WinIBW\README.md", r"D:\transform_github\a_upload", r"D:\transform_github\original_repos"))
+
