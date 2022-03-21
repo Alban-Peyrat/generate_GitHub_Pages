@@ -5,21 +5,22 @@
 import os
 import urllib.parse
 # External import
-import markdown # uses third-party extensions mdx_truly_sane_lists and prependnewline
+import markdown # uses third-party extensions mdx_truly_sane_lists
 import bs4
 import unidecode
 # Internal import
 import ressources.normalize as rscNz
 
 # Defines global variables
-ext = ['toc', 'prependnewline','mdx_truly_sane_lists']
-##ext = ['toc', 'mdx_truly_sane_lists']
+##ext = ['toc', 'prependnewline','mdx_truly_sane_lists']
+ext = ['toc', 'mdx_truly_sane_lists']
 githubPath = r"https://github.com/Alban-Peyrat/"
 pagesPath = r"https://alban-peyrat.github.io/outils/"
 # Je crois pas avoir besoin de ça en fait
 fileExtensionsToExclude = ["pdf", "xlsx", "xls", "xlsm", "zip", "py", "js", "css", "json", "xml"]
 
 def remove_accents_link(str):
+    """Returns the URL removing accents."""
     return unidecode.unidecode(urllib.parse.unquote(str))
 
 # Je crois pas avoir besoin de ça en fait
@@ -28,6 +29,71 @@ def is_excluded_file(str):
         if str == format:
             return True
     return False
+
+def get_first_char(line):
+    """Returns the numbers of spaces before the first character and the first
+    character.
+
+    Arguments:
+        line {string} -- a line. Must not be a empty line"""
+    ind = 0
+    for chr in line:
+        if chr == " ":
+            ind += 1
+        else:
+            return ind, chr
+
+def is_list(ind, chr, line):
+    """Returns if the line is part of a list or not.
+
+    Arguments:
+        ind {integer} -- the indentation
+        chr {string} -- the first character of the line after the identention
+        line {string} -- the whole line"""
+    if chr == "*":
+        if line[ind + 1] == " ":
+            return True
+        else:
+            return False
+    elif chr.isnumeric():
+        if line[ind + 1:ind + 3] == ". ":
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def prepend_new_lines_to_list(f): # It seems to work perfectly.
+    # Which honnestly doesn't feel right because I had no bugs when I finished
+    # the reverse loop. I did forget to add a break that absolutely did not
+    # matter in the html file but still, I'm feeling suspicious.
+    """Insert a new line before markdown lists (not sublists).
+    /!\ It is designed for my markdown files.
+
+    Arguments:
+        f {string} -- the markdown file as a string (afetr a read()
+
+    Returns a list."""
+    lines = f.split("\n")
+    output = []
+    for ii, line in enumerate(lines):
+        if len(line) > 0:
+            ind, chr = get_first_char(line)
+            if is_list(ind, chr, line):
+                for jj in reversed(range(len(output))):
+                    if output[jj] == "":
+                        output.append("")
+                        break
+                    else:
+                        ind, chr = get_first_char(output[jj])
+                        if is_list(ind, chr, output[jj]):
+                            break
+                output.append(line)
+            else:
+                output.append(line)
+        else:
+            output.append(line)
+    return output
 
 def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
     # Defines all file paths
@@ -59,9 +125,11 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
 
     # Writes a temporay file that can be edited
     md = rscNz.upgrade_md_headers(md)
+    md = prepend_new_lines_to_list(md)
     with open(mdTempFilePath, mode="w", encoding="utf-8") as f:
         f.write("[TOC]\n")
-        f.write(md)
+        for line in md:
+            f.write(line + "\n")
 
     # Creates the HTML file from the temporary file
     markdown.markdownFromFile(input=mdTempFilePath, output=htmlFilePath, encoding="utf-8", extensions=ext)
@@ -139,5 +207,5 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
 
 
 ##main("WinIBW", r"D:\test_python\EDIT_MARKDOWN.md")
-##print(main("WinIBW", r"D:\transform_github\original_repos\WinIBW\README.md", r"D:\transform_github\a_upload", r"D:\transform_github\original_repos"))
+##print(main("WinIBW", r"D:\transform_github\original_repos\WinIBW\scripts.md", r"D:\transform_github\a_upload", r"D:\transform_github\original_repos"))
 
