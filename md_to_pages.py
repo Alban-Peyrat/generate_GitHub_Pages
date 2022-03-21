@@ -78,6 +78,9 @@ def prepend_new_lines_to_list(f): # It seems to work perfectly.
     output = []
     for ii, line in enumerate(lines):
         if len(line) > 0:
+            if line.strip() == "":
+                output.append("")
+                continue
             ind, chr = get_first_char(line)
             if is_list(ind, chr, line):
                 for jj in reversed(range(len(output))):
