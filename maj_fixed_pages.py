@@ -6,11 +6,15 @@ import os
 # External import
 import bs4
 
-
-
-def main(originalFilePath, newDirPath=""): #see if I can keep other scripts
+def main(originalFilePath, newDirPath=""):
     """Applies the template to the html file. Keeps the content of the div with
-    the id "contenu"."""
+    the id "contenu".
+
+    Arguments:
+        originalFilePath {rString} -- absolute path to the html file.
+        newDirPath {rString} -- directory of the output file.
+
+    Returns the absolute path  of the created file."""
     fileName = originalFilePath[originalFilePath.rfind("\\")+1:]
 
     # Gets Pages template

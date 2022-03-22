@@ -16,6 +16,7 @@ import ressources.normalize as rscNz
 ext = ['toc', 'mdx_truly_sane_lists']
 githubPath = r"https://github.com/Alban-Peyrat/"
 pagesPath = r"https://alban-peyrat.github.io/outils/"
+specificScripts = {"aide-depot":["./aideDepot_addCopyHtml.js"]}
 # Je crois pas avoir besoin de ça en fait
 fileExtensionsToExclude = ["pdf", "xlsx", "xls", "xlsm", "zip", "py", "js", "css", "json", "xml"]
 
@@ -99,12 +100,22 @@ def prepend_new_lines_to_list(f): # It seems to work perfectly.
     return output
 
 def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
+    """Transforms a markdown file to a html files applying a template.
+    /!\ Designed for my GitHub Pages.
+
+    Arguments:
+        repo {string} -- Name of the GitHub repository (/!\ is used in a link)
+        mdFilePath {rString} -- absolute path to the markdown file.
+        htmlDirPath {rString} -- absolute path of directory of the output html file.
+        rootPath {rString} --
+
+    Returns the absolute path  of the created file."""
     # Defines all file paths
     PAGES_TEMPLATE = os.getenv("PAGES_TEMPLATE")
     path = mdFilePath[:mdFilePath.rfind("\\")+1]
     fileName = mdFilePath[len(path):mdFilePath.rfind(".")]
     if fileName == "README":
-        fileName = repo
+        fileName = repo[repo.rfind("\\")+1:]
         if path[path[:-1].rfind("\\")+1:-1] == repo:
             path = path[:path[:-1].rfind("\\")+1]
     htmlFilePath = path + fileName + ".html"
@@ -112,12 +123,6 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
     if htmlDirPath != "":
         htmlFilePath = htmlDirPath + htmlFilePath[len(rootPath):]
         os.makedirs(htmlFilePath[:htmlFilePath.rfind("\\")], exist_ok=True)
-##        subDirList = htmlFilePath[len(htmlDirPath)+1:].split("\\")
-##        subDirList.pop(len(subDirList)-1)
-##        print(subDirList)
-##        for dir in subDirList:
-##            os.makedirs(dir,)
-##            pass
         mdTempFilePath = htmlDirPath + r"\temp.md"
 
 
@@ -188,18 +193,35 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
             if toc[0].li == None:
                 template.find(id="tableMatieres").decompose()
             else:
-                toc = toc[0].contents[1]
+                toc = toc[0]
+##                toc = toc[0].contents[1]
+                tocType = ["I", "A", "1", "a", "i"]
+                tocTypeInd = 0
                 for this in toc.findAll("ul"):
                     this.name = "ol"
+                    this["type"] = tocType[tocTypeInd]
+                    tocTypeInd += 1
+                    if tocTypeInd == 5:
+                        tocTypeInd = 0
                 template.find(id="tableMatieres").append(toc)
 
         # Adds links to GitHub
         ghLinks = template.find(id="lienGitHub")
         ghLinks.li.a.append(repo)
-        ghLinks.li.a["href"] = ghLinks.li.a["href"] + repo
+        if "\\" in repo:
+            subRepo = repo[:repo.find("\\")] + "/tree/main/" + repo[repo.find("\\")+1:]
+            ghLinks.li.a["href"] = ghLinks.li.a["href"] + subRepo
+        else:
+            ghLinks.li.a["href"] = ghLinks.li.a["href"] + repo
 
         # Adds the page to the template
         template.find(id="main").append(soup)
+
+        # Adds complementary scripts if needed
+        if fileName in specificScripts:
+            for script in specificScripts[fileName]:
+                scriptTag = template.new_tag("script", src=script)
+                template.html.append(scriptTag)
 
         # Applies changes
         f.seek(0 , 0)
@@ -208,7 +230,7 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
 
         return htmlFilePath
 
-
 ##main("WinIBW", r"D:\test_python\EDIT_MARKDOWN.md")
+##main("ub-svs", r"D:\transform_github\original_repos\ub-svs\dumas\README.md", r"D:\transform_github\a_upload\outils", r"D:\transform_github\original_repos")
+##main("ub-svs", r"D:\transform_github\original_repos\ub-svs\dumas\aide-depot.md", r"D:\transform_github\a_upload\outils", r"D:\transform_github\original_repos")
 ##print(main("WinIBW", r"D:\transform_github\original_repos\WinIBW\scripts.md", r"D:\transform_github\a_upload", r"D:\transform_github\original_repos"))
-
