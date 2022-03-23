@@ -196,13 +196,16 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
                 toc = toc[0]
 ##                toc = toc[0].contents[1]
                 tocType = ["I", "A", "1", "a", "i"]
-                tocTypeInd = 0
                 for this in toc.findAll("ul"):
                     this.name = "ol"
-                    this["type"] = tocType[tocTypeInd]
-                    tocTypeInd += 1
-                    if tocTypeInd == 5:
-                        tocTypeInd = 0
+                    thisParent = this.find_parent("ol")
+                    if thisParent == None:
+                        this["type"] = tocType[0]
+                    else:
+                        tocTypeInd = tocType.index(thisParent["type"]) + 1
+                        if tocTypeInd == 5:
+                            tocTypeInd = 0
+                        this["type"] = tocType[tocTypeInd]
                 template.find(id="tableMatieres").append(toc)
 
         # Adds links to GitHub
