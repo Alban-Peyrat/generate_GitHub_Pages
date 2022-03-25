@@ -43,6 +43,10 @@ def main(root, outputPath, outputFileName, sub="outils"):
                 res = mtp.main(repo, os.path.join(path, name), htmlDirPath=outputPath, rootPath=root)
                 res = change_to_index(os.path.join(path, name), res, outputPath)
                 f.write(res+"\n")
+            elif ".png" in name:
+                os.makedirs(outputPath+path[len(root):] , exist_ok=True)
+                shutil.copyfile(os.path.join(path, name), outputPath+path[len(root):]+"\\"+name)
+                f.write(outputPath+path[len(root):]+"\\"+name + "\n")
             else:
                 for html_file in html_files: # Applies the template to HTML files
                     if root + "\\" + html_file == os.path.join(path, name):
@@ -71,4 +75,4 @@ def change_to_index(originalFilePath, path, outputPath):
             return outputPath + "\\" + readme
     return path
 
-##main(r"D:\transform_github\original_repos", r"D:\transform_github\a_upload", "list_created_files")
+main(r"D:\transform_github\original_repos_to_transform", r"D:\transform_github\a_upload", "list_created_files")

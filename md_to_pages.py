@@ -4,6 +4,8 @@
 
 import os
 import urllib.parse
+import random #for fullCode
+import string #for fullCode
 # External import
 import markdown # uses third-party extensions mdx_truly_sane_lists
 import bs4
@@ -99,6 +101,46 @@ def prepend_new_lines_to_list(f): # It seems to work perfectly.
             output.append(line)
     return output
 
+def extract_full_code(md):
+    """Returns md without ```code``` (replaced by unique string) and a
+    list of dictionnaries with name, value, language as keys.
+
+    Arguments:
+        md {string} -- the markdown file as a string."""
+    stop = 0
+    output = []
+    opt = string.ascii_letters + string.digits
+    while md.find("```") > -1:
+        dic = {}
+        deb = md.find("```") # Just to make things easier to be honest
+        # Defines this code's name
+        name = "z"
+        for i in range(25):
+            name += random.choice(opt)
+        dic["name"] = name
+
+        # Defines this code language
+        language = md[deb+3:md.find("\n", deb)].strip()
+        dic["language"] = language
+
+        # Gets the code
+        end = md.find("\n```", deb+3)
+        value = md[md.find("\n", deb)+1:end]
+        dic["value"] = value
+
+        output.append(dic)
+
+        # Replace the code by it's name
+        md = md[:deb-1] + "\n" + name + md[end+4:]
+
+        # Prevents an infinite loop
+        stop += 1
+        if stop > 100:
+            print("While looped 100 : extract_full_code was stopped")
+            break
+
+    return md, output
+
 def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
     """Transforms a markdown file to a html files applying a template.
     /!\ Designed for my GitHub Pages.
@@ -133,7 +175,9 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
 
     # Writes a temporay file that can be edited
     md = rscNz.upgrade_md_headers(md)
+    md, fullCodeList = extract_full_code(md)
     md = prepend_new_lines_to_list(md)
+
     with open(mdTempFilePath, mode="w", encoding="utf-8") as f:
         f.write("[TOC]\n")
         for line in md:
@@ -183,7 +227,34 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
                     lnk["href"] = lnk["href"][:hashIndex] + remove_accents_link(lnk["href"][hashIndex:])
                     lnk["href"] = pagesPath + lnk["href"][len(githubPath):]
 
+        # Puts images out of paragraph tag
+        imgs = soup.findAll('img')
+        for img in imgs:
+            thisParent = img.parent
+            thisParent.name = "a"
+            thisParent["href"] = img["src"]
+            thisParent["target"] = "_blank"
+
+        # Generate full codes if they are any
+        for fullCode in fullCodeList:
+            this = soup.find(string=fullCode["name"]).parent
+            this.name = "pre"
+            code = bs4.BeautifulSoup("<code></code>", "html.parser")
+            code = code.code
+            code.string = fullCode["value"]
+            code["language"] = "language-" + fullCode["language"].lower()
+            this.string = ""
+            this.append(code)
+
         # Adding the template
+        # Adds highlight.js to the page if needed
+        if fullCodeList != []:
+            highlight_js_head = """<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>"""
+            highlight_js = bs4.BeautifulSoup(highlight_js_head, "html.parser")
+            template.head.append(highlight_js)
         # Adds the page title
         template.title.append(title)
         template.find(id="pageName").string = title
@@ -236,4 +307,4 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
 ##main("WinIBW", r"D:\test_python\EDIT_MARKDOWN.md")
 ##main("ub-svs", r"D:\transform_github\original_repos\ub-svs\dumas\README.md", r"D:\transform_github\a_upload\outils", r"D:\transform_github\original_repos")
 ##main("ub-svs", r"D:\transform_github\original_repos\ub-svs\dumas\aide-depot.md", r"D:\transform_github\a_upload\outils", r"D:\transform_github\original_repos")
-##print(main("WinIBW", r"D:\transform_github\original_repos\WinIBW\scripts.md", r"D:\transform_github\a_upload", r"D:\transform_github\original_repos"))
+##main("WinIBW", r"D:\transform_github\original_repos_to_transform\WinIBW\python-winibw.md", r"D:\transform_github\a_upload\outils", r"D:\transform_github\original_repos_to_transform")
