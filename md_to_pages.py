@@ -250,7 +250,7 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
         # Adds highlight.js to the page if needed
         if fullCodeList != []:
             highlight_js_head = """<link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/default.min.css">
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/an-old-hope.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
 <script>hljs.highlightAll();</script>"""
             highlight_js = bs4.BeautifulSoup(highlight_js_head, "html.parser")
