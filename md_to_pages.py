@@ -199,6 +199,11 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
             href = lnk.get("href")
             if href[:1] == "#": # Internal file link
                 lnk["href"] = remove_accents_link(href)
+            elif "/../../../" in href: # Links to another directory
+                # I'm using absolute path because the relative path can be different
+                # between Pages and GitHub and I'm too lazy to find out a way to
+                # make it work
+                lnk["href"] = "https://alban-peyrat.github.io/outils/" + href[len("/../../../"):]
             elif href.find("/") == -1 or href[:1] == ".": # Same directory file /!\ needs to be changed
                 format = href[href.rfind(".")+1:href.rfind(".")+3]
                 if format == "md":
