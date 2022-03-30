@@ -235,6 +235,25 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
             thisParent["href"] = img["src"]
             thisParent["target"] = "_blank"
 
+        # Adds coloring to UNIAMRC subfields in code
+        codeList = soup.findAll("code")
+        for codeTag in codeList:
+            if "$" in codeTag.string:
+                codeTag["class"] = "highlight-marc"
+                thisContent = ""
+                for thisStr in codeTag.string.split("$"):
+                    if len(thisStr) > 0 and thisStr != codeTag.string.split("$")[0]:
+                        thisContent += '<span class="subCode">' + "$" + str(thisStr[:1]) + '</span>'
+                        thisContent += str(thisStr[1:])
+                    elif thisContent != "":
+                        thisContent += '<span class="subCode">' + "$" + '</span>'
+                    else:
+                        thisContent += thisStr
+                span = bs4.BeautifulSoup(thisContent, "html.parser")
+                codeTag.clear()
+                codeTag.append(span)
+
+
         # Generate full codes if they are any
         for fullCode in fullCodeList:
             this = soup.find(string=fullCode["name"]).parent
