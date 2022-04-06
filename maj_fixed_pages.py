@@ -16,6 +16,11 @@ def main(originalFilePath, newDirPath=""):
 
     Returns the absolute path  of the created file."""
     fileName = originalFilePath[originalFilePath.rfind("\\")+1:]
+    # Checks if it's a "special-pages" page
+    prevRep = originalFilePath[originalFilePath[:originalFilePath.rfind(fileName)-1].rfind("\\")+1:originalFilePath.rfind(fileName)-1]
+    if prevRep == "special-pages":
+        fileName = "special-pages\\" + fileName
+        os.makedirs(os.path.dirname(newDirPath + "\\" + fileName), exist_ok=True)
 
     # Gets Pages template
     PAGES_TEMPLATE = os.getenv("PAGES_TEMPLATE")

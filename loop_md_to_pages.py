@@ -7,7 +7,7 @@ import md_to_pages as mtp
 import maj_fixed_pages as mfp
 import ressources.output_file as rscOf
 
-html_files = ["index.html", "404.html"] # Apply template to the these HTML files
+html_files = ["index.html", "404.html", r"special-pages\control-tools.html"] # Apply template to the these HTML files
 raw_files = [r"ub-svs\dumas\generateur-notice.html",
             r"ub-svs\dumas\dumas_indexes.json",
             r"ub-svs\dumas\generateur_erreur_liste.json",
@@ -43,7 +43,7 @@ def main(root, outputPath, outputFileName, sub="outils"):
                 res = mtp.main(repo, os.path.join(path, name), htmlDirPath=outputPath, rootPath=root)
                 res = change_to_index(os.path.join(path, name), res, outputPath)
                 f.write(res+"\n")
-            elif ".png" in name:
+            elif ".png" in name and not "Louise\\" in path:
                 os.makedirs(outputPath+path[len(root):] , exist_ok=True)
                 shutil.copyfile(os.path.join(path, name), outputPath+path[len(root):]+"\\"+name)
                 f.write(outputPath+path[len(root):]+"\\"+name + "\n")
@@ -75,4 +75,4 @@ def change_to_index(originalFilePath, path, outputPath):
             return outputPath + "\\" + readme
     return path
 
-main(r"D:\transform_github\original_repos_to_transform", r"D:\transform_github\a_upload", "list_created_files")
+##main(r"D:\transform_github\original_repos_to_transform", r"D:\transform_github\a_upload", "list_created_files")
