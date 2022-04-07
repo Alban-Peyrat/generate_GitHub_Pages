@@ -75,4 +75,4 @@ def change_to_index(originalFilePath, path, outputPath):
             return outputPath + "\\" + readme
     return path
 
-##main(r"D:\transform_github\original_repos_to_transform", r"D:\transform_github\a_upload", "list_created_files")
+main(r"D:\transform_github\original_repos_to_transform", r"D:\transform_github\a_upload", "list_created_files")
