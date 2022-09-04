@@ -6,12 +6,13 @@ import os
 import urllib.parse
 import random #for fullCode
 import string #for fullCode
+import re #for MARC coloring
 # External import
 import markdown # uses third-party extensions mdx_truly_sane_lists
 import bs4
 import unidecode
 # Internal import
-import ressources.normalize as rscNz
+import python_ressources.normalize as rscNz
 
 # Defines global variables
 ##ext = ['toc', 'prependnewline','mdx_truly_sane_lists']
@@ -240,25 +241,6 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
             thisParent["href"] = img["src"]
             thisParent["target"] = "_blank"
 
-        # Adds coloring to UNIAMRC subfields in code
-        codeList = soup.findAll("code")
-        for codeTag in codeList:
-            if "$" in codeTag.string:
-                codeTag["class"] = "highlight-marc"
-                thisContent = ""
-                for thisStr in codeTag.string.split("$"):
-                    if len(thisStr) > 0 and thisStr != codeTag.string.split("$")[0]:
-                        thisContent += '<span class="subCode">' + "$" + str(thisStr[:1]) + '</span>'
-                        thisContent += str(thisStr[1:])
-                    elif thisContent != "":
-                        thisContent += '<span class="subCode">' + "$" + '</span>'
-                    else:
-                        thisContent += thisStr
-                span = bs4.BeautifulSoup(thisContent, "html.parser")
-                codeTag.clear()
-                codeTag.append(span)
-
-
         # Generate full codes if they are any
         for fullCode in fullCodeList:
             this = soup.find(string=fullCode["name"]).parent
@@ -266,9 +248,55 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
             code = bs4.BeautifulSoup("<code></code>", "html.parser")
             code = code.code
             code.string = fullCode["value"]
-            code["language"] = "language-" + fullCode["language"].lower()
+            if fullCode["language"].lower() == "marc":
+                code["class"] = "language-plaintext"
+            elif fullCode["language"].lower() == "javascript" or fullCode["language"].lower() == "js":
+                code["class"] = "hljs language-javascript"
+            elif fullCode["language"].lower() == "vbscript" or fullCode["language"].lower() == "vbs" or fullCode["language"].lower() == "vba":
+                code["class"] = "hljs language-vbnet"
+            elif fullCode["language"].lower() == "python":
+                code["class"] = "hljs language-python"
+            else:
+                code["class"] = "language-undefined"
             this.string = ""
             this.append(code)
+
+        # Adds coloring to UNIAMRC subfields in code
+        codeList = soup.findAll("code")
+        for codeTag in codeList:
+            if "$" in codeTag.string:
+                if "class" in codeTag:
+                    if "plaintext" in codeTag["class"]:
+                        codeTag["class"] += " highlight-marc"
+                else:
+                    codeTag["class"] = "highlight-marc"
+
+                # Regex à patir du début de ligne jusqu'à pas ça [=tags] : nb, E L e R X * : (^[\d|L|E|e|R|X|*]*)
+                reg = "(^[\d|L|E|e|R|X|*]*)"
+                codeTag.string = re.sub(reg, '<span class="tag">'+r"\1"+'</span>', codeTag.string, flags=re.MULTILINE)
+
+                # Regex $ suivi de tout ce qui n'est pas $ : ([$]([^$]))
+                reg = "([$]([^$]))"
+                codeTag.string = re.sub(reg, '<span class="subCode">'+r"\1"+'</span>', codeTag.string)
+                
+                 # Regex tout ce qui se trouve entre {} : ({.*?})
+                 # {(.*)}   (?<={).*?(?=})
+                reg = "({.*?})"
+                codeTag.string = re.sub(reg, '<span class="alpMARCvar">'+r"\1"+'</span>', codeTag.string)
+
+                # thisContent = ""
+                # for thisStr in codeTag.string.split("$"):
+                #     if len(thisStr) > 0 and thisStr != codeTag.string.split("$")[0]:
+                #         thisContent += '<span class="subCode">' + "$" + str(thisStr[:1]) + '</span>'
+                #         thisContent += str(thisStr[1:])
+                #     elif thisContent != "":
+                #         thisContent += '<span class="subCode">' + "$" + '</span>'
+                #     else:
+                #         thisContent += thisStr
+                #span = bs4.BeautifulSoup(thisContent, "html.parser")
+                span = bs4.BeautifulSoup(codeTag.string, "html.parser")
+                codeTag.clear()
+                codeTag.append(span)
 
         # Adding the template
         # Adds highlight.js to the page if needed
@@ -276,7 +304,11 @@ def main(repo, mdFilePath, htmlDirPath="", rootPath=""):
             highlight_js_head = """<link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/an-old-hope.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
-<script>hljs.highlightAll();</script>"""
+<script>hljs.configure({languages:[],cssSelector:"pre code.hljs"});
+window.addEventListener('load', function() {
+   hljs.highlightAll();document.querySelectorAll("pre code").forEach(element => element.classList.add("hljs"));
+})</script>"""
+#la partie avant le highlightall désactive le autodetection. Voire si ça pose PB
             highlight_js = bs4.BeautifulSoup(highlight_js_head, "html.parser")
             template.head.append(highlight_js)
         # Adds the page title

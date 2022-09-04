@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
+# USe python_param/README to launch the script
+
 import os
 import shutil
 # Internal imports
 import md_to_pages as mtp
 import maj_fixed_pages as mfp
-import ressources.output_file as rscOf
+import python_ressources.output_file as rscOf
 
 html_files = ["index.html", "404.html", r"special-pages\control-tools.html"] # Apply template to the these HTML files
 raw_files = [r"ub-svs\dumas\generateur-notice.html",
@@ -28,15 +30,17 @@ def main(root, outputPath, outputFileName, sub="outils"):
     all the created files (located at the root of outputPath).
         sub {string} -- name of the subdirectory to add to outputPath for all
     non fixed files."""
+    root = MY_PATH + "\\" + root
+    outputPath = MY_PATH + "\\" + outputPath
     f = rscOf.def_output_file(outputPath+"\\"+outputFileName)
     if sub != "":
         rootOutputPath = outputPath
         outputPath += "\\" + sub
+    outputPath += "\\" + repo
 
     for path, subdirs, files in os.walk(root):
         for name in files:
-            repo = path[len(root)+1:]
-            subdirInd = repo.find("\\")
+            print(name)
             if ".md" in name:
                 if "temp.md" in name:
                     continue
@@ -75,4 +79,6 @@ def change_to_index(originalFilePath, path, outputPath):
             return outputPath + "\\" + readme
     return path
 
-main(r"D:\transform_github\original_repos_to_transform", r"D:\transform_github\a_upload", "list_created_files")
+
+repo = input("Nom du repo a transformer : ")
+main(repo, r"\GitHub_Pages\Alban-Peyrat.github.io", "list_created_files")
